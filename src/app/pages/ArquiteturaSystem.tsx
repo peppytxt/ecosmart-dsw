@@ -10,7 +10,6 @@ export function ArquiteturaSystem() {
         </p>
       </div>
 
-      {/* Architecture Overview */}
       <div className="rounded-xl border bg-gradient-to-br from-[#4caf50]/10 to-[#81c784]/10 p-8">
         <h2 className="text-2xl font-bold text-[#1a4d2e]">Visão Geral</h2>
         <p className="mt-2 text-muted-foreground">
@@ -19,9 +18,8 @@ export function ArquiteturaSystem() {
         </p>
       </div>
 
-      {/* Main Components */}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Frontend */}
         <div className="rounded-xl border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#4caf50]">

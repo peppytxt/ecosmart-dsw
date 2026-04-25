@@ -16,7 +16,7 @@ export function DashboardLayout() {
   }, [user, isLoading, navigate]);
 
   useEffect(() => {
-    // Redirect to appropriate dashboard based on user profile
+    // Redireciona para o dashboard apropriado baseado no seu perfil de usuário
     if (user && location.pathname === '/app/dashboard') {
       switch (user.perfil) {
         case 'UP':
@@ -29,7 +29,7 @@ export function DashboardLayout() {
           navigate('/app/dashboard-admin', { replace: true });
           break;
         default:
-          // UC stays on /app/dashboard
+          // Usuário Comum fica em /app/dashboard
           break;
       }
     }

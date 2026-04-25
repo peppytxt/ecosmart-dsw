@@ -1,4 +1,4 @@
-"use client";
+"use client"; // Aqui avisa ao React que esse componente é clicavel, ent ele 
 
 import * as React from "react";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";

@@ -116,7 +116,6 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full w-64 flex-col bg-[#1a4d2e] text-white">
-      {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#4caf50]">
           <span className="font-bold">ES</span>
@@ -127,7 +126,6 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto p-4">
         {visibleItems.map((item) => {
           const Icon = item.icon;
@@ -149,7 +147,6 @@ export function Sidebar() {
           );
         })}
 
-        {/* Empresarial Section */}
         {user?.perfil === 'UE' && (
           <>
             <div className="my-4 border-t border-white/10 pt-4">
@@ -179,7 +176,6 @@ export function Sidebar() {
           </>
         )}
 
-        {/* Admin Section */}
         {user?.perfil === 'UA' && (
           <>
             <div className="my-4 border-t border-white/10 pt-4">
@@ -210,7 +206,6 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* User Profile Badge */}
       <div className="border-t border-white/10 p-4">
         <div className="rounded-lg bg-white/10 p-3">
           <p className="text-xs font-semibold text-white/70">Perfil</p>

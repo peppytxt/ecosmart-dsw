@@ -448,7 +448,7 @@ export const mockPontosColeta: PontoColeta[] = [
     id: '3',
     nome: 'Coleta Eletrônicos Tech',
     tipo: 'Especializado Eletrônicos',
-    endereo: 'Av. Faria Lima, 2000 - São Paulo, SP',
+    endereco: 'Av. Faria Lima, 2000 - São Paulo, SP',
     latitude: -23.574729,
     longitude: -46.688537,
     materiais_aceitos: ['Eletrônicos', 'Pilhas', 'Baterias'],

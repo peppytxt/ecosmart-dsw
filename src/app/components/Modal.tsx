@@ -29,7 +29,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 
       {/* Modal */}
       <div className={`relative w-full ${sizeClasses[size]} m-4 rounded-xl border bg-card shadow-lg`}>
-        {/* Header */}
+        {/* Header (Topo da Página) */}
         <div className="flex items-center justify-between border-b p-6">
           <h2 className="font-semibold">{title}</h2>
           <button

@@ -43,9 +43,9 @@ export function TopBar() {
         </div>
       </div>
 
-      {/* Right Side */}
+      {/* Lado Direito */}
       <div className="flex items-center gap-4">
-        {/* Notifications */}
+        {/* Notficações */}
         <button
           onClick={() => navigate('/app/notificacoes')}
           className="relative rounded-lg p-2 text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
@@ -58,7 +58,7 @@ export function TopBar() {
           )}
         </button>
 
-        {/* User Menu */}
+        {/* Menu do Usuário */}
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}

@@ -57,7 +57,7 @@ export function SignupPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Side - Form */}
+      {/* Lado Esquerdo - Form */}
       <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
         <div className="mx-auto w-full max-w-md">
           <Link to="/" className="mb-8 flex items-center gap-2">
