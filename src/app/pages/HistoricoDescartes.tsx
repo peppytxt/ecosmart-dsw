@@ -70,7 +70,7 @@ export function HistoricoDescartes() {
     ? ((totalKgMesAtual - totalKgMesAnterior) / totalKgMesAnterior * 100).toFixed(0)
     : 0;
 
-  const columns = [
+const columns = [
     {
       key: 'data_descarte',
       header: 'Data',
@@ -83,6 +83,15 @@ export function HistoricoDescartes() {
       render: (item: any) => `${item.quantidade} ${item.unidade}`
     },
     { key: 'local', header: 'Local' },
+    {
+      key: 'coletor',
+      header: 'Coletor',
+      render: (item: any) => (
+        <span className="text-sm font-medium text-muted-foreground">
+          {item.nome_coletor || 'Pendente'}
+        </span>
+      )
+    },
     {
       key: 'status',
       header: 'Status',
@@ -287,6 +296,19 @@ export function HistoricoDescartes() {
             <div>
               <p className="text-sm text-muted-foreground">Observações</p>
               <p className="mt-1">{selectedDescarte.observacao || 'Nenhuma observação'}</p>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3 border border-slate-100">
+              <p className="text-sm text-muted-foreground">Informação da Coleta</p>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-[#1a4d2e]/10 flex items-center justify-center">
+                   <Package className="h-4 w-4 text-[#1a4d2e]" />
+                </div>
+                <p className="font-medium">
+                  {selectedDescarte.nome_coletor 
+                    ? `Coletado por: ${selectedDescarte.nome_coletor}` 
+                    : 'Aguardando Coletor'}
+                </p>
+              </div>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Status</p>

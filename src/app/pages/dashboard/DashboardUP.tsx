@@ -42,6 +42,7 @@ export function DashboardUP() {
   const [isBenefitsModalOpen, setIsBenefitsModalOpen] = useState(false);
 
   const userDescartes = mockDescartes.filter(d => d.usuario_id === user?.id);
+  const descartesPendentes = userDescartes.filter(d => d.status === 'registrado');
   const userImpact = mockImpactos[user?.id || ''] || {
     pontos: 0,
     reciclado_kg: 0,
@@ -253,6 +254,30 @@ export function DashboardUP() {
             ))}
           </div>
         </div>
+        {/* Alerta de Itens Pendentes */}
+      {descartesPendentes.length > 0 && (
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100">
+              <Zap className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-yellow-800">Coletas Pendentes</h3>
+              <p className="text-sm text-yellow-700">
+                Você tem {descartesPendentes.length} descarte(s) aguardando coleta.
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+              onClick={() => navigate('/app/historico')}
+            >
+              Ver Detalhes
+            </Button>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Minha Evolução */}

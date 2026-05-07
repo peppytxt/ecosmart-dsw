@@ -22,6 +22,7 @@ export interface Descarte {
   data_descarte: string;
   local: string;
   observacao: string;
+  nome_coletor?: string;
   foto_url?: string;
   status: 'registrado' | 'coletado' | 'processado';
   created_at: string;
@@ -194,6 +195,7 @@ export const mockDescartes: Descarte[] = [
     data_descarte: '2024-03-15',
     local: 'Residência',
     observacao: 'Papelão e jornais',
+    nome_coletor: 'Marcos Oliveira (Cooperativa Verde MT)',
     status: 'coletado',
     created_at: '2024-03-15T10:00:00Z'
   },
@@ -206,6 +208,7 @@ export const mockDescartes: Descarte[] = [
     data_descarte: '2024-03-18',
     local: 'Residência',
     observacao: 'Garrafas PET',
+    nome_coletor: 'Ana Paula (Recicla Tudo)',
     status: 'coletado',
     created_at: '2024-03-18T14:30:00Z'
   },
@@ -230,6 +233,7 @@ export const mockDescartes: Descarte[] = [
     data_descarte: '2024-03-22',
     local: 'Residência',
     observacao: 'Latas de alumínio',
+    nome_coletor: 'Carlos Silva (Metal Recicla)',
     status: 'coletado',
     created_at: '2024-03-22T16:45:00Z'
   },
@@ -254,6 +258,7 @@ export const mockDescartes: Descarte[] = [
     data_descarte: '2024-03-26',
     local: 'Ponto de Coleta Bairro',
     observacao: 'Óleo usado',
+    nome_coletor: 'Fernanda Costa (Óleo Verde)',
     status: 'coletado',
     created_at: '2024-03-26T15:20:00Z'
   },
@@ -278,6 +283,7 @@ export const mockDescartes: Descarte[] = [
     data_descarte: '2024-03-28',
     local: 'Empresa',
     observacao: 'Documentos para descarte',
+    nome_coletor: 'Juliete (Recicla Express)',
     status: 'coletado',
     created_at: '2024-03-28T09:00:00Z'
   },

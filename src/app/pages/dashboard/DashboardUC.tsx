@@ -1,15 +1,17 @@
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router';
 import { StatCard } from '../../components/Card';
-import { Recycle, History, TrendingUp, Award, Plus, BookOpen } from 'lucide-react';
+import { Recycle, History, TrendingUp, Award, Plus, BookOpen, Zap } from 'lucide-react';
 import { mockDescartes, mockImpactos } from '../../../lib/mockData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Button } from '../../components/ui/button';
 
 export function DashboardUC() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const userDescartes = mockDescartes.filter(d => d.usuario_id === user?.id);
+  const descartesPendentes = userDescartes.filter(d => d.status === 'registrado');
   const userImpact = mockImpactos[user?.id || ''] || {
     pontos: 0,
     reciclado_kg: 0,
@@ -22,6 +24,7 @@ export function DashboardUC() {
     { mes: 'Fev', kg: 12 },
     { mes: 'Mar', kg: userImpact.reciclado_kg }
   ];
+  
 
   return (
     <div className="space-y-6">
@@ -34,6 +37,31 @@ export function DashboardUC() {
           Bem-vindo ao seu painel de sustentabilidade
         </p>
       </div>
+
+      {/* Alerta de Itens Pendentes */}
+      {descartesPendentes.length > 0 && (
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100">
+              <Zap className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-yellow-800">Coletas Pendentes</h3>
+              <p className="text-sm text-yellow-700">
+                Você tem {descartesPendentes.length} descarte(s) aguardando coleta.
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+              onClick={() => navigate('/app/historico')}
+            >
+              Ver Detalhes
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
