@@ -254,7 +254,8 @@ export function DashboardUP() {
             ))}
           </div>
         </div>
-        {/* Alerta de Itens Pendentes */}
+      </div>
+      {/* Alerta de Itens Pendentes */}
       {descartesPendentes.length > 0 && (
         <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 mb-6">
           <div className="flex items-center gap-3">
@@ -278,7 +279,6 @@ export function DashboardUP() {
           </div>
         </div>
       )}
-      </div>
 
       {/* Minha Evolução */}
       <div className="rounded-xl border bg-card p-6 shadow-sm">

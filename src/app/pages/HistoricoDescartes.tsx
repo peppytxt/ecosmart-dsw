@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { mockDescartes } from '../../lib/mockData';
 import { Table } from '../components/Table';
 import { Drawer } from '../components/Modal';
-import { Search, Download, Filter, Calendar, Package, ArrowLeft, Star, TrendingUp, BarChart3 } from 'lucide-react';
+import { Search, Download, Filter, Calendar, Package, ArrowLeft, Star, TrendingUp, BarChart3, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -95,15 +95,22 @@ const columns = [
     {
       key: 'status',
       header: 'Status',
-      render: (item: any) => (
-        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-          item.status === 'coletado' ? 'bg-green-100 text-green-800' :
-          item.status === 'processado' ? 'bg-blue-100 text-blue-800' :
-          'bg-yellow-100 text-yellow-800'
-        }`}>
-          {item.status}
-        </span>
-      )
+      render: (item: any) => {
+        const statusConfig = {
+          registrado: { label: 'Pendente', class: 'bg-yellow-100 text-yellow-800' },
+          em_transito: { label: 'Em Trânsito', class: 'bg-blue-100 text-blue-800' },
+          coletado: { label: 'Na Unidade', class: 'bg-purple-100 text-purple-800' },
+          processado: { label: 'Finalizado', class: 'bg-green-100 text-green-800' }
+        };
+
+        const config = statusConfig[item.status as keyof typeof statusConfig];
+
+        return (
+          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${config.class}`}>
+            {config.label}
+          </span>
+        );
+      }
     }
   ];
 
@@ -309,6 +316,24 @@ const columns = [
                     : 'Aguardando Coletor'}
                 </p>
               </div>
+              {selectedDescarte.status !== 'registrado' && (
+              <div className="rounded-lg bg-blue-50 p-3 border border-blue-100">
+                <p className="text-xs text-blue-600 font-bold uppercase">Rastreamento</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Coletado por: {selectedDescarte.nome_coletor}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedDescarte.status === 'em_transito' 
+                        ? 'O coletor está transportando seu resíduo.' 
+                        : 'Entregue na unidade de processamento.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Status</p>

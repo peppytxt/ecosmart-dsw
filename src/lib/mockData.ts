@@ -24,7 +24,7 @@ export interface Descarte {
   observacao: string;
   nome_coletor?: string;
   foto_url?: string;
-  status: 'registrado' | 'coletado' | 'processado';
+  status: 'registrado' | 'em_transito' | 'coletado' | 'processado';
   created_at: string;
 }
 
@@ -195,8 +195,7 @@ export const mockDescartes: Descarte[] = [
     data_descarte: '2024-03-15',
     local: 'Residência',
     observacao: 'Papelão e jornais',
-    nome_coletor: 'Marcos Oliveira (Cooperativa Verde MT)',
-    status: 'coletado',
+    status: 'em_transito',
     created_at: '2024-03-15T10:00:00Z'
   },
   {
