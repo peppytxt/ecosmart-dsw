@@ -134,7 +134,13 @@ export function LoginPage() {
                 <span className="font-medium">Usuário:</span> maria@email.com / maria123
               </div>
               <div>
+                <span className="font-medium">Usuário:</span> pedro@email.com / pedro123
+              </div>
+              <div>
                 <span className="font-medium">Premium:</span> ana@email.com / ana123
+              </div>
+              <div>
+                <span className="font-medium">Premium:</span> joao@email.com / joao123
               </div>
               <div>
                 <span className="font-medium">Empresarial:</span> carlos@empresa.com / carlos123

@@ -151,17 +151,28 @@ export const mockUsuarios: Usuario[] = [
   },
   {
     id: '3',
+    nome: 'Pedro Santos',
+    email: 'pedro@email.com',
+    senha: 'pedro123',
+    telefone: '(11) 98765-1294',
+    endereco: 'Rua das Flores, 1234 - São Paulo, SP',
+    perfil: 'UC',
+    status: 'ativo',
+    created_at: '2024-02-10T14:30:00Z'
+  },
+  {
+    id: '4',
     nome: 'João Santos',
     email: 'joao@email.com',
     senha: 'joao123',
     telefone: '(11) 98765-5678',
     endereco: 'Av. Brasil, 456 - São Paulo, SP',
-    perfil: 'UC',
+    perfil: 'UP',
     status: 'ativo',
     created_at: '2024-02-15T09:15:00Z'
   },
   {
-    id: '4',
+    id: '5',
     nome: 'Ana Premium',
     email: 'ana@email.com',
     senha: 'ana123',
@@ -172,7 +183,7 @@ export const mockUsuarios: Usuario[] = [
     created_at: '2024-01-20T16:45:00Z'
   },
   {
-    id: '5',
+    id: '6',
     nome: 'Carlos Empresa',
     email: 'carlos@empresa.com',
     senha: 'carlos123',

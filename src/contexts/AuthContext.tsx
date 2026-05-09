@@ -16,7 +16,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored session
+    // Verifica a ssessão armazenada
     const storedUser = localStorage.getItem('ecosmart_user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, senha: string): Promise<boolean> => {
-    // Simulate API call
+    // Simula Chamada de API
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const foundUser = mockUsuarios.find(
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (userData: Omit<Usuario, 'id' | 'created_at' | 'status'>): Promise<boolean> => {
-    // Simulate API call
+    // Simula chamada de API
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const newUser: Usuario = {
