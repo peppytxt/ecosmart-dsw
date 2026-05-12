@@ -45,7 +45,7 @@ TEMPLATES = [
     },
 ]
 
-# AQUI ESTÁ A CONEXÃO COM O DOCKER
+# CONEXÃO COM O DOCKER
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
