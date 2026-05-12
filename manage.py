@@ -3,7 +3,7 @@ import os
 import sys
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecosmart_settings') # Nome que daremos ao arquivo de config
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecosmart_settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

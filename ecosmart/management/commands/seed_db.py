@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from datetime import date
-from app.models import Usuario, TipoResiduo, Instituicao, UsuarioInstituicao, Descarte, PedidoColeta
+from ecosmart.models import Usuario, TipoResiduo, Instituicao, UsuarioInstituicao, Descarte, PedidoColeta
 
 class Command(BaseCommand):
     help = "Seed inicial do EcoSmart"
