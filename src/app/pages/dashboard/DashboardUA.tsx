@@ -2,9 +2,48 @@ import { useNavigate } from 'react-router';
 import { StatCard } from '../../components/Card';
 import { Users, Recycle, Bell, Shield, FileText, Activity } from 'lucide-react';
 import { mockUsuarios, mockDescartes, mockPedidosColeta, mockLogsAdmin, mockMateriais } from '../../../lib/mockData';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export function DashboardUA() {
   const navigate = useNavigate();
+
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [conteudos, setConteudos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Busca usuários e conteúdos ao mesmo tempo
+        const [resUsers, resContent] = await Promise.all([
+          fetch('http://localhost:8000/api/usuarios/'),
+          fetch('http://localhost:8000/api/conteudos/')
+        ]);
+
+        if (resUsers.ok && resContent.ok) {
+          const dataUsers = await resUsers.json();
+          const dataContent = await resContent.json();
+          setUsuarios(dataUsers);
+          setConteudos(dataContent);
+        }
+      } catch (err) {
+        toast.error("Erro ao sincronizar dados do painel.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const totalUsuarios = usuarios.length;
+  const usuariosAtivos = usuarios.filter(u => u.status === 'ativo' || u.status === true).length;
+
+  const contagemPorPerfil = (perfil: string) => 
+    usuarios.filter(u => u.perfil === perfil).length;
+
+  if (loading) return <div className="p-10 text-center">Carregando painel...</div>;
 
   // Calculate active orders
   const pedidosAtivos = mockPedidosColeta.filter(p => 
@@ -23,10 +62,10 @@ export function DashboardUA() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Usuários"
-          value={mockUsuarios.length}
+          value={totalUsuarios}
           icon={Users}
           color="primary"
-          trend={{ value: '+5 este mês', isPositive: true }}
+          trend={{ value: 'Atualizado em tempo real', isPositive: true }}
         />
         <StatCard
           title="Total de Descartes"
@@ -44,7 +83,7 @@ export function DashboardUA() {
         />
         <StatCard
           title="Usuários Ativos"
-          value={mockUsuarios.filter(u => u.status === 'ativo').length}
+          value={usuariosAtivos}
           icon={Shield}
           color="primary"
         />
@@ -102,15 +141,15 @@ export function DashboardUA() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* User Stats */}
+        {/* User Stats Dinâmicos */}
         <div className="rounded-xl border bg-card p-6 shadow-sm">
           <h3 className="font-semibold">Usuários por Perfil</h3>
           <div className="mt-6 grid grid-cols-2 gap-4">
             {[
-              { label: 'Comum', count: mockUsuarios.filter(u => u.perfil === 'UC').length, color: 'bg-blue-100 text-blue-800' },
-              { label: 'Premium', count: mockUsuarios.filter(u => u.perfil === 'UP').length, color: 'bg-purple-100 text-purple-800' },
-              { label: 'Empresarial', count: mockUsuarios.filter(u => u.perfil === 'UE').length, color: 'bg-orange-100 text-orange-800' },
-              { label: 'Admin', count: mockUsuarios.filter(u => u.perfil === 'UA').length, color: 'bg-green-100 text-green-800' }
+              { label: 'Comum', count: contagemPorPerfil('UC'), color: 'bg-blue-100' },
+              { label: 'Premium', count: contagemPorPerfil('UP'), color: 'bg-purple-100' },
+              { label: 'Empresarial', count: contagemPorPerfil('UE'), color: 'bg-orange-100' },
+              { label: 'Admin', count: contagemPorPerfil('UA'), color: 'bg-green-100' }
             ].map((item, index) => (
               <div key={index} className="rounded-lg bg-muted p-4 text-center">
                 <div className="text-2xl font-bold text-[#1a4d2e]">{item.count}</div>
@@ -127,7 +166,7 @@ export function DashboardUA() {
             <div className="flex items-center justify-between rounded-lg bg-muted p-4">
               <div>
                 <p className="text-sm text-muted-foreground">Conteúdos Educativos</p>
-                <p className="mt-1 text-2xl font-bold text-[#1a4d2e]">{mockMateriais.length}</p>
+                <p className="mt-1 text-2xl font-bold text-[#1a4d2e]">{conteudos.length}</p>
               </div>
               <FileText className="h-8 w-8 text-[#4caf50]" />
             </div>
