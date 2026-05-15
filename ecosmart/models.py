@@ -112,3 +112,22 @@ class PedidoColeta(models.Model):
     observacoes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+class ConteudoEducativo(models.Model):
+    CATEGORIAS = [
+        ('Eletrônicos', 'Eletrônicos'),
+        ('Químicos', 'Químicos'),
+        ('Orgânicos', 'Orgânicos'),
+        ('Recicláveis', 'Recicláveis'),
+    ]
+
+    nome = models.CharField(max_length=200)
+    categoria = models.CharField(max_length=50, choices=CATEGORIAS)
+    descricao = models.TextField()
+    # Armazenamos como texto longo; no Python vamos transformar em lista
+    como_descartar = models.TextField(help_text="Separe os itens por quebra de linha")
+    cuidados = models.TextField(blank=True, help_text="Separe os itens por quebra de linha")
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nome

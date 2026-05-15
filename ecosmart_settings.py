@@ -14,10 +14,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'ecosmart',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -26,6 +28,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'ecosmart_urls'
 
@@ -56,6 +60,14 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+
+# URL para acessar arquivos estáticos (CSS, JS, Imagens)
+STATIC_URL = 'static/'
+
+# O Django vai procurar arquivos estáticos extras
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 USE_TZ = True
 LANGUAGE_CODE = 'pt-br'

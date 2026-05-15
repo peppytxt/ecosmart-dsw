@@ -1,24 +1,50 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { mockMateriais } from '../../lib/mockData';
 import { Search, BookOpen, ArrowLeft, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function CentralEducativa() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [materiais, setMateriais] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const categories = ['all', ...Array.from(new Set(mockMateriais.map(m => m.categoria)))];
+  // Função para buscar os conteúdos reais do Django
+  const fetchMateriais = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/conteudos/');
+      if (res.ok) {
+        const data = await res.json();
+        setMateriais(data);
+      }
+    } catch (err) {
+      toast.error("Não foi possível carregar os conteúdos educativos.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredMateriais = mockMateriais.filter(m => {
+  useEffect(() => {
+    fetchMateriais();
+  }, []);
+
+  // Gerar categorias dinamicamente baseadas no que existe no banco
+  const categories = ['all', ...Array.from(new Set(materiais.map(m => m.categoria)))];
+
+  // Filtros aplicados sobre a lista que veio do banco
+  const filteredMateriais = materiais.filter(m => {
     const matchesSearch = m.nome.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || m.categoria === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
+  if (loading) {
+    return <div className="p-10 text-center">Carregando conteúdos...</div>;
+  }
+
   return (
     <div className="space-y-6">
-      {/* Breadcrumb / Back Button */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -68,13 +94,13 @@ export function CentralEducativa() {
             placeholder="Buscar material..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-10 w-full rounded-lg border bg-background pl-10 pr-4 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-10 w-full rounded-lg border bg-background pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#4caf50]/20"
           />
         </div>
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="h-10 rounded-lg border bg-background px-4 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="h-10 rounded-lg border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#4caf50]/20"
         >
           <option value="all">Todas as categorias</option>
           {categories.filter(c => c !== 'all').map(cat => (
@@ -85,24 +111,30 @@ export function CentralEducativa() {
 
       {/* Materials Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredMateriais.map((material) => (
-          <button
-            key={material.id}
-            onClick={() => navigate(`/app/educacao/${material.id}`)}
-            className="flex flex-col items-start gap-4 rounded-xl border bg-card p-6 text-left shadow-sm transition-shadow hover:shadow-md"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#4caf50]/10">
-              <BookOpen className="h-6 w-6 text-[#4caf50]" />
-            </div>
-            <div>
-              <h3 className="font-semibold">{material.nome}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{material.categoria}</p>
-              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                {material.descricao}
-              </p>
-            </div>
-          </button>
-        ))}
+        {filteredMateriais.length > 0 ? (
+          filteredMateriais.map((material) => (
+            <button
+              key={material.id}
+              onClick={() => navigate(`/app/educacao/${material.id}`)}
+              className="flex flex-col items-start gap-4 rounded-xl border bg-card p-6 text-left shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#4caf50]/10">
+                <BookOpen className="h-6 w-6 text-[#4caf50]" />
+              </div>
+              <div>
+                <h3 className="font-semibold">{material.nome}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{material.categoria}</p>
+                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                  {material.descricao}
+                </p>
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="col-span-full py-10 text-center text-muted-foreground">
+            Nenhum conteúdo encontrado para os filtros selecionados.
+          </div>
+        )}
       </div>
     </div>
   );

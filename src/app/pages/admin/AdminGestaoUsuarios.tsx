@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { mockUsuarios } from '../../../lib/mockData';
+import { useEffect, useState } from 'react';
 import { Table } from '../../components/Table';
 import { Modal } from '../../components/Modal';
-import { Search, UserPlus, Edit, Lock } from 'lucide-react';
+import { Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function AdminGestaoUsuarios() {
@@ -11,9 +10,8 @@ export function AdminGestaoUsuarios() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNewModal, setShowNewModal] = useState(false);
-  const [usuarios, setUsuarios] = useState(mockUsuarios);
+  const [usuarios, setUsuarios] = useState<any[]>([]);
   
-  // Form states
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -21,46 +19,62 @@ export function AdminGestaoUsuarios() {
     status: 'ativo' as 'ativo' | 'inativo'
   });
 
+  // Busca dados do Django
+  useEffect(() => {
+    fetch('http://localhost:8000/api/usuarios/')
+      .then(res => res.json())
+      .then(data => {
+        const formattedData = data.map((u: any) => ({
+          ...u,
+          status: u.status ? 'ativo' : 'inativo'
+        }));
+        setUsuarios(formattedData);
+      })
+      .catch(err => console.error("Erro ao buscar usuários:", err));
+  }, []);
+
   const filteredUsers = usuarios.filter(u => {
-    const matchesSearch = u.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = u.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPerfil = filterPerfil === 'all' || u.perfil === filterPerfil;
     return matchesSearch && matchesPerfil;
   });
 
-  const handleNewUser = () => {
+  // Função para criar usuário no Banco (API)
+  const handleNewUser = async () => {
     if (!formData.nome || !formData.email) {
       toast.error('Preencha todos os campos obrigatórios!');
       return;
     }
 
-    const newUser = {
-      id: String(usuarios.length + 1),
-      nome: formData.nome,
-      email: formData.email,
-      senha: 'senha123',
-      telefone: '',
-      endereco: '',
-      perfil: formData.perfil,
-      status: formData.status,
-      created_at: new Date().toISOString()
-    };
+    try {
+      const response = await fetch('http://localhost:8000/api/usuarios/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
 
-    setUsuarios([...usuarios, newUser]);
-    toast.success('Usuário criado com sucesso!');
-    setShowNewModal(false);
-    setFormData({ nome: '', email: '', perfil: 'UC', status: 'ativo' });
+      if (response.ok) {
+        const savedUser = await response.json();
+        // Ajusta o status que vem do banco para o padrão do seu front
+        const formattedUser = { ...savedUser, status: savedUser.status ? 'ativo' : 'inativo' };
+        
+        setUsuarios([...usuarios, formattedUser]); 
+        toast.success('Usuário salvo no banco!');
+        setShowNewModal(false);
+        setFormData({ nome: '', email: '', perfil: 'UC', status: 'ativo' });
+      }
+    } catch (error) {
+      toast.error('Erro ao conectar com o servidor.');
+    }
   };
 
   const handleSaveEdit = () => {
     if (!selectedUser) return;
-
+    // FAZER um fetch com método PUT/PATCH para o Django futuramente
     const updatedUsuarios = usuarios.map(u => 
-      u.id === selectedUser.id 
-        ? { ...u, ...formData }
-        : u
+      u.id === selectedUser.id ? { ...u, ...formData } : u
     );
-
     setUsuarios(updatedUsuarios);
     toast.success('Usuário atualizado com sucesso!');
     setShowEditModal(false);
@@ -91,7 +105,7 @@ export function AdminGestaoUsuarios() {
       header: 'Perfil',
       render: (item: any) => {
         const labels = { UC: 'Comum', UP: 'Premium', UE: 'Empresarial', UA: 'Admin' };
-        return labels[item.perfil as keyof typeof labels];
+        return labels[item.perfil as keyof typeof labels] || item.perfil;
       }
     },
     {
@@ -108,7 +122,7 @@ export function AdminGestaoUsuarios() {
     {
       key: 'created_at',
       header: 'Data de Cadastro',
-      render: (item: any) => new Date(item.created_at).toLocaleDateString('pt-BR')
+      render: (item: any) => item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '---'
     }
   ];
 
@@ -117,9 +131,7 @@ export function AdminGestaoUsuarios() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[#1a4d2e]">Gestão de Usuários</h1>
-          <p className="mt-2 text-muted-foreground">
-            Gerenciar usuários do sistema
-          </p>
+          <p className="mt-2 text-muted-foreground">Gerenciar usuários do sistema</p>
         </div>
         <button 
           onClick={openNewModal}
@@ -130,7 +142,7 @@ export function AdminGestaoUsuarios() {
         </button>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Agora lendo os dados do Banco! */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
           { label: 'Comum', count: usuarios.filter(u => u.perfil === 'UC').length },
@@ -145,7 +157,6 @@ export function AdminGestaoUsuarios() {
         ))}
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -154,13 +165,13 @@ export function AdminGestaoUsuarios() {
             placeholder="Buscar por nome ou e-mail..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-10 w-full rounded-lg border bg-background pl-10 pr-4 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-10 w-full rounded-lg border bg-background pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <select
           value={filterPerfil}
           onChange={(e) => setFilterPerfil(e.target.value)}
-          className="h-10 rounded-lg border bg-background px-4 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="h-10 rounded-lg border bg-background px-4 text-sm"
         >
           <option value="all">Todos os perfis</option>
           <option value="UC">Comum</option>
@@ -170,21 +181,12 @@ export function AdminGestaoUsuarios() {
         </select>
       </div>
 
-      {/* Table */}
       <div className="rounded-xl border bg-card p-6 shadow-sm">
-        <Table
-          data={filteredUsers}
-          columns={columns}
-          onRowClick={openEditModal}
-        />
+        <Table data={filteredUsers} columns={columns} onRowClick={openEditModal} />
       </div>
 
-      {/* New User Modal */}
-      <Modal
-        isOpen={showNewModal}
-        onClose={() => setShowNewModal(false)}
-        title="Novo Usuário"
-      >
+      {/* Modal Novo Usuário */}
+      <Modal isOpen={showNewModal} onClose={() => setShowNewModal(false)} title="Novo Usuário">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium">Nome *</label>
@@ -192,8 +194,7 @@ export function AdminGestaoUsuarios() {
               type="text"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              placeholder="Digite o nome completo"
-              className="mt-2 h-10 w-full rounded-lg border bg-input-background px-4 text-sm"
+              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
             />
           </div>
           <div>
@@ -202,8 +203,7 @@ export function AdminGestaoUsuarios() {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="Digite o e-mail"
-              className="mt-2 h-10 w-full rounded-lg border bg-input-background px-4 text-sm"
+              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
             />
           </div>
           <div>
@@ -211,7 +211,7 @@ export function AdminGestaoUsuarios() {
             <select
               value={formData.perfil}
               onChange={(e) => setFormData({ ...formData, perfil: e.target.value as any })}
-              className="mt-2 h-10 w-full rounded-lg border bg-input-background px-4 text-sm"
+              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
             >
               <option value="UC">Usuário Comum</option>
               <option value="UP">Usuário Premium</option>
@@ -219,40 +219,15 @@ export function AdminGestaoUsuarios() {
               <option value="UA">Administrador</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-              className="mt-2 h-10 w-full rounded-lg border bg-input-background px-4 text-sm"
-            >
-              <option value="ativo">Ativo</option>
-              <option value="inativo">Inativo</option>
-            </select>
-          </div>
           <div className="flex gap-3 pt-4">
-            <button 
-              onClick={() => setShowNewModal(false)}
-              className="flex-1 rounded-lg border py-2 transition-colors hover:bg-muted"
-            >
-              Cancelar
-            </button>
-            <button 
-              onClick={handleNewUser}
-              className="flex-1 rounded-lg bg-[#4caf50] py-2 font-semibold text-white transition-colors hover:bg-[#45a049]"
-            >
-              Criar Usuário
-            </button>
+            <button onClick={() => setShowNewModal(false)} className="flex-1 rounded-lg border py-2">Cancelar</button>
+            <button onClick={handleNewUser} className="flex-1 rounded-lg bg-[#4caf50] py-2 text-white">Criar</button>
           </div>
         </div>
       </Modal>
 
-      {/* Edit Modal */}
-      <Modal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        title="Editar Usuário"
-      >
+      {/* Modal Editar Usuário */}
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Editar Usuário">
         {selectedUser && (
           <div className="space-y-4">
             <div>
@@ -261,17 +236,7 @@ export function AdminGestaoUsuarios() {
                 type="text"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                className="mt-2 h-10 w-full rounded-lg border bg-input-background px-4 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">E-mail</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="mt-2 h-10 w-full rounded-lg border bg-input-background px-4 text-sm"
-                disabled
+                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
               />
             </div>
             <div>
@@ -279,7 +244,7 @@ export function AdminGestaoUsuarios() {
               <select
                 value={formData.perfil}
                 onChange={(e) => setFormData({ ...formData, perfil: e.target.value as any })}
-                className="mt-2 h-10 w-full rounded-lg border bg-input-background px-4 text-sm"
+                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
               >
                 <option value="UC">Usuário Comum</option>
                 <option value="UP">Usuário Premium</option>
@@ -287,30 +252,9 @@ export function AdminGestaoUsuarios() {
                 <option value="UA">Administrador</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                className="mt-2 h-10 w-full rounded-lg border bg-input-background px-4 text-sm"
-              >
-                <option value="ativo">Ativo</option>
-                <option value="inativo">Inativo</option>
-              </select>
-            </div>
             <div className="flex gap-3 pt-4">
-              <button 
-                onClick={() => setShowEditModal(false)}
-                className="flex-1 rounded-lg border py-2 transition-colors hover:bg-muted"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleSaveEdit}
-                className="flex-1 rounded-lg bg-[#4caf50] py-2 font-semibold text-white transition-colors hover:bg-[#45a049]"
-              >
-                Salvar
-              </button>
+              <button onClick={() => setShowEditModal(false)} className="flex-1 rounded-lg border py-2">Cancelar</button>
+              <button onClick={handleSaveEdit} className="flex-1 rounded-lg bg-[#4caf50] py-2 text-white">Salvar</button>
             </div>
           </div>
         )}

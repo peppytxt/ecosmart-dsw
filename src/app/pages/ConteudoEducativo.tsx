@@ -1,18 +1,43 @@
 import { useParams, useNavigate } from 'react-router';
-import { mockMateriais } from '../../lib/mockData';
 import { ArrowLeft, MapPin, Plus, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+interface Material {
+  id: number | string;
+  nome: string;
+  descricao: string;
+  como_descartar: string[];
+  cuidados: string[];
+  categoria: string;
+}
 
 export function ConteudoEducativo() {
-  const { materialId } = useParams();
+  const { materialId } = useParams<{ materialId: string }>();
   const navigate = useNavigate();
+  
+  const [material, setMaterial] = useState<Material | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const material = mockMateriais.find(m => m.id === materialId);
+  useEffect(() => {
+    fetch(`http://localhost:8000/api/conteudos/`)
+      .then(res => res.json())
+      .then((data: Material[]) => {
+        const encontrado = data.find((m) => String(m.id) === String(materialId));
+        setMaterial(encontrado || null);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, [materialId]);
+
+  if (loading) return <div className="text-center p-10">Carregando...</div>;
 
   if (!material) {
     return (
-      <div className="text-center">
-        <h2>Material não encontrado</h2>
-        <button onClick={() => navigate('/app/educacao')} className="mt-4 text-[#4caf50]">
+      <div className="text-center p-10">
+        <h2 className="text-2xl font-bold">Material não encontrado</h2>
+        <button onClick={() => navigate('/app/educacao')} className="mt-4 text-[#4caf50] underline">
           Voltar para Central Educativa
         </button>
       </div>
@@ -56,23 +81,24 @@ export function ConteudoEducativo() {
             </ul>
           </div>
 
-          {/* Cuidados */}
-          <div className="rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              <div>
-                <h3 className="font-semibold text-yellow-900">Cuidados Importantes</h3>
-                <ul className="mt-2 space-y-1 text-sm text-yellow-800">
-                  {material.cuidados.map((cuidado, index) => (
-                    <li key={index}>• {cuidado}</li>
-                  ))}
-                </ul>
+          {material.cuidados && material.cuidados.length > 0 && (
+            <div className="rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                <div>
+                  <h3 className="font-semibold text-yellow-900">Cuidados Importantes</h3>
+                  <ul className="mt-2 space-y-1 text-sm text-yellow-800">
+                    {material.cuidados.map((cuidado, index) => (
+                      <li key={index}>• {cuidado}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* CTA Buttons */}
+        {/* Botões de Ação */}
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
           <button
             onClick={() => navigate('/app/pontos-coleta')}
