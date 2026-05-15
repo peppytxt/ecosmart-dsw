@@ -12,6 +12,8 @@ class Usuario(models.Model):
     nome = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
     senha = models.CharField(max_length=255)
+    telefone = models.CharField(max_length=20, blank=True, null=True)
+    endereco = models.CharField(max_length=500, blank=True, null=True)
     perfil = models.CharField(max_length=2, choices=PERFIL_CHOICES)
     status = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

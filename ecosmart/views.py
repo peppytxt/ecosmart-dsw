@@ -64,3 +64,69 @@ def api_conteudos(request):
             ConteudoEducativo.objects.filter(id=id_conteudo).delete()
             return JsonResponse({"message": "Excluído!"}, status=204)
         return JsonResponse({"error": "ID não fornecido"}, status=400)
+    
+@csrf_exempt
+def api_signup(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            usuario = Usuario.objects.create(
+                nome=data.get('nome'),
+                email=data.get('email'),
+                telefone=data.get('telefone'),
+                endereco=data.get('endereco'),
+                senha=data.get('senha'),
+                perfil=data.get('perfil'),
+                status=True
+            )
+
+            return JsonResponse({
+                'id': usuario.id,
+                'nome': usuario.nome,
+                'email': usuario.email,
+                'telefone': usuario.telefone,
+                'endereco': usuario.endereco,
+                'perfil': usuario.perfil,
+                'status': usuario.status,
+                'created_at': usuario.created_at.isoformat() if usuario.created_at else None
+            }, status=201)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+@csrf_exempt
+def api_login(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        senha = data.get('senha')
+        
+        usuario = Usuario.objects.filter(email=email, senha=senha).first()
+        
+        if usuario:
+            return JsonResponse({
+                'id': usuario.id,
+                'nome': usuario.nome,
+                'email': usuario.email,
+                'telefone': usuario.telefone,
+                'endereco': usuario.endereco,
+                'perfil': usuario.perfil,
+                'status': usuario.status
+            })
+        else:
+            return JsonResponse({'error': 'Credenciais inválidas'}, status=401)
+
+
+@csrf_exempt
+def api_update_perfil(request, user_id):
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        Usuario.objects.filter(id=user_id).update(
+            nome=data.get('nome'),
+            telefone=data.get('telefone'),
+            endereco=data.get('endereco')
+        )
+        return JsonResponse({'message': 'Atualizado com sucesso'})
+

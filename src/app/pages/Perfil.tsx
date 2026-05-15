@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { User as UserIcon, Mail, Phone, MapPin, Edit2, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,9 +13,32 @@ export function Perfil() {
     endereco: user?.endereco || ''
   });
 
-  const handleSave = () => {
-    toast.success('Perfil atualizado com sucesso!');
-    setIsEditing(false);
+  useEffect(() => {
+    if (user) {
+    setFormData({
+      nome: user.nome || '',
+      email: user.email || '',
+      telefone: user.telefone || '',
+      endereco: user.endereco || ''
+    });
+  }
+}, [user]);
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/update-perfil/${user?.id}/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success('Perfil atualizado no Supabase!');
+        setIsEditing(false);
+      }
+    } catch (err) {
+      toast.error('Erro ao salvar no banco');
+    }
   };
 
   return (
