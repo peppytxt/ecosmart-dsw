@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Usuario, ConteudoEducativo 
 import json
+from django.contrib.auth.hashers import make_password, check_password
 
 @csrf_exempt
 def api_usuarios(request):
@@ -76,7 +77,7 @@ def api_signup(request):
                 email=data.get('email'),
                 telefone=data.get('telefone'),
                 endereco=data.get('endereco'),
-                senha=data.get('senha'),
+                senha=make_password(data.get('senha')),
                 perfil=data.get('perfil'),
                 status=True
             )
@@ -102,10 +103,10 @@ def api_login(request):
         data = json.loads(request.body)
         email = data.get('email')
         senha = data.get('senha')
+
+        usuario = Usuario.objects.filter(email=email).first()
         
-        usuario = Usuario.objects.filter(email=email, senha=senha).first()
-        
-        if usuario:
+        if usuario and check_password(senha, usuario.senha):
             return JsonResponse({
                 'id': usuario.id,
                 'nome': usuario.nome,
