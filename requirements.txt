@@ -2,3 +2,4 @@ django
 django-cors-headers
 psycopg[binary]
 supabase
+corsheaders

@@ -8,7 +8,7 @@ services:
     environment:
       - "POSTGRES_DB=ecosmart_db"
       - "POSTGRES_USER=admin"
-      - "POSTGRES_PASSWORD=ecosmart_pass"
+      - "POSTGRES_PASSWORD=1234"
     ports:
       - "5432:5432"
 
