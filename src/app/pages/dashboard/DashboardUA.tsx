@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router';
 import { StatCard } from '../../components/Card';
 import { Users, Recycle, Bell, Shield, FileText, Activity } from 'lucide-react';
-import { mockUsuarios, mockDescartes, mockPedidosColeta, mockLogsAdmin, mockMateriais } from '../../../lib/mockData';
+// Removemos os mocks de usuários e conteúdos, mantendo apenas os outros por enquanto
+import { mockDescartes, mockPedidosColeta, mockLogsAdmin } from '../../../lib/mockData';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -15,7 +16,7 @@ export function DashboardUA() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Busca usuários e conteúdos ao mesmo tempo
+        // Busca usuários e conteúdos ao mesmo tempo da API do Django
         const [resUsers, resContent] = await Promise.all([
           fetch('http://localhost:8000/api/usuarios/'),
           fetch('http://localhost:8000/api/conteudos/')
@@ -26,6 +27,8 @@ export function DashboardUA() {
           const dataContent = await resContent.json();
           setUsuarios(dataUsers);
           setConteudos(dataContent);
+        } else {
+          toast.error("Falha ao carregar alguns dados do servidor.");
         }
       } catch (err) {
         toast.error("Erro ao sincronizar dados do painel.");
@@ -38,14 +41,25 @@ export function DashboardUA() {
   }, []);
 
   const totalUsuarios = usuarios.length;
-  const usuariosAtivos = usuarios.filter(u => u.status === 'ativo' || u.status === true).length;
+
+  const usuariosAtivos = usuarios.filter(u => 
+    u.status === 'ativo' || u.status === true || String(u.status).toLowerCase() === 'true'
+  ).length;
 
   const contagemPorPerfil = (perfil: string) => 
     usuarios.filter(u => u.perfil === perfil).length;
 
-  if (loading) return <div className="p-10 text-center">Carregando painel...</div>;
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center text-muted-foreground">
+        <div className="flex flex-col items-center gap-2">
+          <Activity className="h-8 w-8 animate-pulse text-[#4caf50]" />
+          <span>Carregando painel real...</span>
+        </div>
+      </div>
+    );
+  }
 
-  // Calculate active orders
   const pedidosAtivos = mockPedidosColeta.filter(p => 
     p.status === 'solicitada' || p.status === 'agendada' || p.status === 'coletando'
   ).length;
@@ -55,7 +69,7 @@ export function DashboardUA() {
       <div>
         <h1 className="text-3xl font-bold text-[#1a4d2e]">Painel Administrativo</h1>
         <p className="mt-2 text-muted-foreground">
-          Visão geral do sistema EcoSmart
+          Visão geral em tempo real do sistema EcoSmart
         </p>
       </div>
 
@@ -65,7 +79,7 @@ export function DashboardUA() {
           value={totalUsuarios}
           icon={Users}
           color="primary"
-          trend={{ value: 'Atualizado em tempo real', isPositive: true }}
+          trend={{ value: 'Sincronizado em tempo real', isPositive: true }}
         />
         <StatCard
           title="Total de Descartes"
@@ -89,7 +103,7 @@ export function DashboardUA() {
         />
       </div>
 
-      {/* Quick Actions */}
+      {/* Ações Rápidas */}
       <div>
         <h2 className="mb-4 text-lg font-semibold">Ações Rápidas</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -141,15 +155,15 @@ export function DashboardUA() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* User Stats Dinâmicos */}
+        {/* User Stats Dinâmicos (Supabase) */}
         <div className="rounded-xl border bg-card p-6 shadow-sm">
           <h3 className="font-semibold">Usuários por Perfil</h3>
           <div className="mt-6 grid grid-cols-2 gap-4">
             {[
-              { label: 'Comum', count: contagemPorPerfil('UC'), color: 'bg-blue-100' },
-              { label: 'Premium', count: contagemPorPerfil('UP'), color: 'bg-purple-100' },
-              { label: 'Empresarial', count: contagemPorPerfil('UE'), color: 'bg-orange-100' },
-              { label: 'Admin', count: contagemPorPerfil('UA'), color: 'bg-green-100' }
+              { label: 'Comum', count: contagemPorPerfil('UC') },
+              { label: 'Premium', count: contagemPorPerfil('UP') },
+              { label: 'Empresarial', count: contagemPorPerfil('UE') },
+              { label: 'Admin', count: contagemPorPerfil('UA') }
             ].map((item, index) => (
               <div key={index} className="rounded-lg bg-muted p-4 text-center">
                 <div className="text-2xl font-bold text-[#1a4d2e]">{item.count}</div>
@@ -159,20 +173,20 @@ export function DashboardUA() {
           </div>
         </div>
 
-        {/* Content Stats */}
+        {/* Content Stats Dinâmicos */}
         <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h3 className="font-semibold">Estatísticas de Conteúdo</h3>
+          <h3 className="font-semibold">Estatísticas da Plataforma</h3>
           <div className="mt-6 space-y-4">
             <div className="flex items-center justify-between rounded-lg bg-muted p-4">
               <div>
-                <p className="text-sm text-muted-foreground">Conteúdos Educativos</p>
+                <p className="text-sm text-muted-foreground">Guias Educativos na Nuvem</p>
                 <p className="mt-1 text-2xl font-bold text-[#1a4d2e]">{conteudos.length}</p>
               </div>
               <FileText className="h-8 w-8 text-[#4caf50]" />
             </div>
             <div className="flex items-center justify-between rounded-lg bg-muted p-4">
               <div>
-                <p className="text-sm text-muted-foreground">Pedidos de Coleta</p>
+                <p className="text-sm text-muted-foreground">Pedidos de Coleta (Simulado)</p>
                 <p className="mt-1 text-2xl font-bold text-[#1a4d2e]">{mockPedidosColeta.length}</p>
               </div>
               <Bell className="h-8 w-8 text-[#4caf50]" />

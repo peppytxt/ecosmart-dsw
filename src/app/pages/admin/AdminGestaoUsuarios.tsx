@@ -15,6 +15,8 @@ export function AdminGestaoUsuarios() {
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
+    telefone: '',
+    endereco: '',
     perfil: 'UC' as 'UC' | 'UP' | 'UE' | 'UA',
     status: 'ativo' as 'ativo' | 'inativo'
   });
@@ -34,58 +36,114 @@ export function AdminGestaoUsuarios() {
   }, []);
 
   const filteredUsers = usuarios.filter(u => {
-    const matchesSearch = u.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = u.nome.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPerfil = filterPerfil === 'all' || u.perfil === filterPerfil;
     return matchesSearch && matchesPerfil;
   });
 
   // Função para criar usuário no Banco (API)
   const handleNewUser = async () => {
-    if (!formData.nome || !formData.email) {
-      toast.error('Preencha todos os campos obrigatórios!');
+  if (!formData.nome || !formData.email) {
+    toast.error('Preencha todos os campos obrigatórios!');
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:8000/api/usuarios/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...formData,
+        // Injeta uma senha padrão que o Django vai criptografar
+        senha: 'EcoSmart123' 
+      })
+    });
+
+    if (response.ok) {
+      const savedUser = await response.json();
+      const formattedUser = { ...savedUser, status: savedUser.status ? 'ativo' : 'inativo' };
+      
+      setUsuarios([...usuarios, formattedUser]); 
+      toast.success('Usuário criado com a senha padrão: EcoSmart123');
+      setShowNewModal(false);
+      setFormData({ nome: '', email: '', telefone: '', endereco: '', perfil: 'UC', status: 'ativo' });
+    }
+  } catch (error) {
+    toast.error('Erro ao conectar com o servidor.');
+  }
+};
+
+  const handleSaveEdit = async () => {
+    if (!selectedUser) return;
+
+    try {
+      const statusBooleano = formData.status === 'ativo';
+
+      const response = await fetch(`http://localhost:8000/api/usuarios/${selectedUser.id}/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          status: statusBooleano
+        })
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        
+        // Formata a resposta para o padrão do front ('ativo' / 'inativo')
+        const formattedUser = {
+          ...updatedUser,
+          status: updatedUser.status ? 'ativo' : 'inativo'
+        };
+
+        const updatedUsuarios = usuarios.map(u => 
+          u.id === selectedUser.id ? formattedUser : u
+        );
+
+        setUsuarios(updatedUsuarios);
+        toast.success('Usuário atualizado no Supabase!');
+        setShowEditModal(false);
+        setSelectedUser(null);
+      } else {
+        toast.error('Erro ao salvar alterações no banco.');
+      }
+    } catch (error) {
+      toast.error('Erro ao conectar com o servidor.');
+    }
+  };
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    if (!window.confirm(`Tem certeza que deseja excluir o usuário ${selectedUser.nome}?`)) {
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/usuarios/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const response = await fetch(`http://localhost:8000/api/usuarios/${selectedUser.id}/`, {
+        method: 'DELETE',
       });
 
       if (response.ok) {
-        const savedUser = await response.json();
-        // Ajusta o status que vem do banco para o padrão do seu front
-        const formattedUser = { ...savedUser, status: savedUser.status ? 'ativo' : 'inativo' };
-        
-        setUsuarios([...usuarios, formattedUser]); 
-        toast.success('Usuário salvo no banco!');
-        setShowNewModal(false);
-        setFormData({ nome: '', email: '', perfil: 'UC', status: 'ativo' });
+        setUsuarios(usuarios.filter(u => u.id !== selectedUser.id));
+        toast.success('Usuário removido do Supabase!');
+        setShowEditModal(false);
+        setSelectedUser(null);
+      } else {
+        toast.error('Não foi possível deletar o usuário.');
       }
     } catch (error) {
       toast.error('Erro ao conectar com o servidor.');
     }
   };
 
-  const handleSaveEdit = () => {
-    if (!selectedUser) return;
-    // FAZER um fetch com método PUT/PATCH para o Django futuramente
-    const updatedUsuarios = usuarios.map(u => 
-      u.id === selectedUser.id ? { ...u, ...formData } : u
-    );
-    setUsuarios(updatedUsuarios);
-    toast.success('Usuário atualizado com sucesso!');
-    setShowEditModal(false);
-    setSelectedUser(null);
-  };
-
   const openEditModal = (user: any) => {
     setSelectedUser(user);
     setFormData({
-      nome: user.nome,
-      email: user.email,
+      nome: user.nome || '',
+      email: user.email || '',
+      telefone: user.telefone || '',
+      endereco: user.endereco || '',
       perfil: user.perfil,
       status: user.status
     });
@@ -93,10 +151,10 @@ export function AdminGestaoUsuarios() {
   };
 
   const openNewModal = () => {
-    setFormData({ nome: '', email: '', perfil: 'UC', status: 'ativo' });
+    setFormData({ nome: '', email: '', telefone: '', endereco: '', perfil: 'UC', status: 'ativo' });
     setShowNewModal(true);
   };
-
+  
   const columns = [
     { key: 'nome', header: 'Nome' },
     { key: 'email', header: 'E-mail' },
@@ -187,14 +245,15 @@ export function AdminGestaoUsuarios() {
 
       {/* Modal Novo Usuário */}
       <Modal isOpen={showNewModal} onClose={() => setShowNewModal(false)} title="Novo Usuário">
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
           <div>
-            <label className="block text-sm font-medium">Nome *</label>
+            <label className="block text-sm font-medium">Nome Completo *</label>
             <input
               type="text"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
+              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="Ex: João Silva"
             />
           </div>
           <div>
@@ -203,40 +262,20 @@ export function AdminGestaoUsuarios() {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
+              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="joao@email.com"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium">Perfil</label>
-            <select
-              value={formData.perfil}
-              onChange={(e) => setFormData({ ...formData, perfil: e.target.value as any })}
-              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
-            >
-              <option value="UC">Usuário Comum</option>
-              <option value="UP">Usuário Premium</option>
-              <option value="UE">Usuário Empresarial</option>
-              <option value="UA">Administrador</option>
-            </select>
-          </div>
-          <div className="flex gap-3 pt-4">
-            <button onClick={() => setShowNewModal(false)} className="flex-1 rounded-lg border py-2">Cancelar</button>
-            <button onClick={handleNewUser} className="flex-1 rounded-lg bg-[#4caf50] py-2 text-white">Criar</button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Modal Editar Usuário */}
-      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Editar Usuário">
-        {selectedUser && (
-          <div className="space-y-4">
+          
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium">Nome</label>
+              <label className="block text-sm font-medium">Telefone</label>
               <input
                 type="text"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
+                value={formData.telefone}
+                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="(11) 98765-4321"
               />
             </div>
             <div>
@@ -244,7 +283,7 @@ export function AdminGestaoUsuarios() {
               <select
                 value={formData.perfil}
                 onChange={(e) => setFormData({ ...formData, perfil: e.target.value as any })}
-                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm"
+                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="UC">Usuário Comum</option>
                 <option value="UP">Usuário Premium</option>
@@ -252,9 +291,112 @@ export function AdminGestaoUsuarios() {
                 <option value="UA">Administrador</option>
               </select>
             </div>
-            <div className="flex gap-3 pt-4">
-              <button onClick={() => setShowEditModal(false)} className="flex-1 rounded-lg border py-2">Cancelar</button>
-              <button onClick={handleSaveEdit} className="flex-1 rounded-lg bg-[#4caf50] py-2 text-white">Salvar</button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium">Endereço Residencial/Comercial</label>
+            <input
+              type="text"
+              value={formData.endereco}
+              onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+              className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="Rua, Número, Bairro - Cidade, Estado"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <button onClick={() => setShowNewModal(false)} className="flex-1 rounded-lg border py-2 text-sm font-medium">Cancelar</button>
+            <button onClick={handleNewUser} className="flex-1 rounded-lg bg-[#4caf50] py-2 text-white text-sm font-medium">Criar Usuário</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Editar Usuário */}
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Editar Ficha do Usuário">
+        {selectedUser && (
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
+            <div>
+              <label className="block text-sm font-medium">Nome Completo</label>
+              <input
+                type="text"
+                value={formData.nome}
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">E-mail (Histórico)</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            {/* NOVOS CAMPOS NA EDIÇÃO */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium">Telefone</label>
+                <input
+                  type="text"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                  className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Perfil de Acesso</label>
+                <select
+                  value={formData.perfil}
+                  onChange={(e) => setFormData({ ...formData, perfil: e.target.value as any })}
+                  className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="UC">Usuário Comum</option>
+                  <option value="UP">Usuário Premium</option>
+                  <option value="UE">Usuário Empresarial</option>
+                  <option value="UA">Administrador</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium">Endereço Cadastrado</label>
+              <input
+                type="text"
+                value={formData.endereco}
+                onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium">Status do Sistema</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                className="mt-2 h-10 w-full rounded-lg border px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+            
+            <div className="flex flex-col gap-2 pt-4 border-t">
+              <div className="flex gap-3">
+                <button onClick={() => setShowEditModal(false)} className="flex-1 rounded-lg border py-2 text-sm font-medium">
+                  Cancelar
+                </button>
+                <button onClick={handleSaveEdit} className="flex-1 rounded-lg bg-[#4caf50] py-2 text-white text-sm font-medium">
+                  Salvar Alterações
+                </button>
+              </div>
+              <button 
+                onClick={handleDeleteUser} 
+                className="w-full rounded-lg bg-red-50 py-2 text-red-600 hover:bg-red-100 transition-colors text-sm font-medium mt-2"
+              >
+                Excluir Usuário permanentemente
+              </button>
             </div>
           </div>
         )}
