@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Usuario, ConteudoEducativo 
+from .models import TipoResiduo, Usuario, ConteudoEducativo, Descarte
 import json
 from django.db.models import Count
 from django.contrib.auth.hashers import make_password, check_password
@@ -219,3 +219,68 @@ def api_usuario_detalhe(request, user_id):
 
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 
+
+@csrf_exempt
+def api_registrar_descarte(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            try:
+                usuario = Usuario.objects.get(id=data.get('usuario_id'))
+            except Usuario.DoesNotExist:
+                return JsonResponse({'error': 'Usuário não localizado no sistema.'}, status=404)
+            
+            nome_residuo = data.get('tipo_residuo')
+            tipo_residuo, _ = TipoResiduo.objects.get_or_create(nome=nome_residuo) 
+
+            # Cria o registro no banco real
+            descarte = Descarte.objects.create(
+                usuario=usuario,
+                tipo_residuo=tipo_residuo,
+                quantidade=data.get('quantidade'),
+                unidade_medida=data.get('unidade'),
+                data_descarte=data.get('data_descarte'),
+                local_descarte=data.get('local'),
+                observacoes=data.get('observacao'),
+                status='registrado'
+            )
+            
+            return JsonResponse({
+                "id": descarte.id,
+                "message": "Descarte integrado com sucesso ao Supabase!"
+            }, status=201)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+            
+    return JsonResponse({'error': 'Método não permitido.'}, status=405)
+
+
+@csrf_exempt
+def api_historico_descartes(request):
+    if request.method == 'GET':
+        usuario_id = request.GET.get('usuario_id')
+        
+        if not usuario_id:
+            return JsonResponse({'error': 'ID do usuário não fornecido'}, status=400)
+
+        descartes = Descarte.objects.filter(usuario_id=usuario_id).order_by('-data_descarte')
+        
+        lista_descartes = []
+        for d in descartes:
+            lista_descartes.append({
+                "id": d.id,
+                "usuario_id": d.usuario_id,
+                "tipo_residuo": d.tipo_residuo.nome if d.tipo_residuo else "Não Informado",
+                "quantidade": float(d.quantidade),
+                "unidade": d.unidade_medida,  
+                "data_descarte": d.data_descarte.isoformat(),
+                "local": d.local_descarte,    
+                "observacao": d.observacoes,  
+                "status": d.status,
+                "created_at": d.created_at.isoformat(),
+                "nome_coletor": "Ponto Verde Central" if d.status != "registrado" else None 
+            })
+            
+        return JsonResponse(lista_descartes, safe=False)

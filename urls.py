@@ -10,4 +10,6 @@ urlpatterns = [
     path('api/login/', views.api_login, name='api_login'),
     path('api/metrics/', views.api_dashboard_metrics, name='api_metrics'),
     path('api/usuarios/<int:user_id>/', views.api_usuario_detalhe, name='api_usuario_detalhe'),
+    path('api/descartes/', views.api_registrar_descarte, name='api_registrar_descarte'),
+    path('api/descartes/historico/', views.api_historico_descartes, name='api_historico_descartes'),
 ]

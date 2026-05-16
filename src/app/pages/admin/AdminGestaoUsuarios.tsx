@@ -325,7 +325,7 @@ export function AdminGestaoUsuarios() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">E-mail (Histórico)</label>
+              <label className="block text-sm font-medium">E-mail</label>
               <input
                 type="email"
                 value={formData.email}
