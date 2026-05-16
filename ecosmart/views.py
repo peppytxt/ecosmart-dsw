@@ -1,7 +1,9 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Usuario, ConteudoEducativo 
+from .models import TipoResiduo, Usuario, ConteudoEducativo, Descarte
 import json
+from django.db.models import Count
+from django.contrib.auth.hashers import make_password, check_password
 
 @csrf_exempt
 def api_usuarios(request):
@@ -12,20 +14,31 @@ def api_usuarios(request):
         return JsonResponse(usuarios, safe=False)
 
     elif request.method == 'POST':
-        data = json.loads(request.body)
-        user = Usuario.objects.create(
-            nome=data.get('nome'),
-            email=data.get('email'),
-            perfil=data.get('perfil', 'UC'),
-            status=(data.get('status') == 'ativo')
-        )
-        return JsonResponse({
-            "id": user.id,
-            "nome": user.nome,
-            "email": user.email,
-            "perfil": user.perfil,
-            "status": "ativo" if user.status else "inativo"
-        }, status=201)
+        try:
+            data = json.loads(request.body)
+            
+            user = Usuario.objects.create(
+                nome=data.get('nome'),
+                email=data.get('email'),
+                telefone=data.get('telefone'), 
+                endereco=data.get('endereco'),  
+                senha=make_password(data.get('senha', 'EcoSmart123')),
+                perfil=data.get('perfil', 'UC'),
+                status=(data.get('status') == 'ativo')
+            )
+            
+            return JsonResponse({
+                "id": user.id,
+                "nome": user.nome,
+                "email": user.email,
+                "telefone": user.telefone,
+                "endereco": user.endereco,
+                "perfil": user.perfil,
+                "status": "ativo" if user.status else "inativo"
+            }, status=201)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
 def api_conteudos(request):
@@ -64,3 +77,210 @@ def api_conteudos(request):
             ConteudoEducativo.objects.filter(id=id_conteudo).delete()
             return JsonResponse({"message": "Excluído!"}, status=204)
         return JsonResponse({"error": "ID não fornecido"}, status=400)
+    
+@csrf_exempt
+def api_signup(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            usuario = Usuario.objects.create(
+                nome=data.get('nome'),
+                email=data.get('email'),
+                telefone=data.get('telefone'),
+                endereco=data.get('endereco'),
+                senha=make_password(data.get('senha')),
+                perfil=data.get('perfil'),
+                status=True
+            )
+
+            return JsonResponse({
+                'id': usuario.id,
+                'nome': usuario.nome,
+                'email': usuario.email,
+                'telefone': usuario.telefone,
+                'endereco': usuario.endereco,
+                'perfil': usuario.perfil,
+                'status': usuario.status,
+                'created_at': usuario.created_at.isoformat() if usuario.created_at else None
+            }, status=201)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+@csrf_exempt
+def api_login(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        senha = data.get('senha')
+
+        usuario = Usuario.objects.filter(email=email).first()
+        
+        if usuario and check_password(senha, usuario.senha):
+            return JsonResponse({
+                'id': usuario.id,
+                'nome': usuario.nome,
+                'email': usuario.email,
+                'telefone': usuario.telefone,
+                'endereco': usuario.endereco,
+                'perfil': usuario.perfil,
+                'status': usuario.status
+            })
+        else:
+            return JsonResponse({'error': 'Credenciais inválidas'}, status=401)
+
+
+@csrf_exempt
+def api_update_perfil(request, user_id):
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        Usuario.objects.filter(id=user_id).update(
+            nome=data.get('nome'),
+            telefone=data.get('telefone'),
+            endereco=data.get('endereco')
+        )
+        return JsonResponse({'message': 'Atualizado com sucesso'})
+    
+
+@csrf_exempt
+def api_dashboard_metrics(request):
+    if request.method == 'GET':
+        try:
+            # Total de usuários por tipo de perfil (UA, UC, UP, UE)
+            perfis = Usuario.objects.values('perfil').annotate(total=Count('perfil'))
+       
+            usuarios_por_perfil = {item['perfil']: item['total'] for item in perfis}
+            
+            total_usuarios = Usuario.objects.count()
+        
+            total_conteudos = ConteudoEducativo.objects.count()
+
+            # Monta o painel de métricas
+            metrics = {
+                'total_usuarios': total_usuarios,
+                'total_conteudos': total_conteudos,
+                'perfil_comum': usuarios_por_perfil.get('UC', 0),
+                'perfil_premium': usuarios_por_perfil.get('UP', 0),
+                'perfil_empresa': usuarios_por_perfil.get('UE', 0),
+                'perfil_admin': usuarios_por_perfil.get('UA', 0),
+            }
+            
+            return JsonResponse(metrics, status=200)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@csrf_exempt
+def api_usuario_detalhe(request, user_id):
+    try:
+        usuario = Usuario.objects.get(id=user_id)
+    except Usuario.DoesNotExist:
+        return JsonResponse({'error': 'Usuário não encontrado'}, status=404)
+
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            
+            # Captura todas as propriedades enviadas pelo React
+            usuario.nome = data.get('nome', usuario.nome)
+            usuario.email = data.get('email', usuario.email)
+            usuario.telefone = data.get('telefone', usuario.telefone)
+            usuario.endereco = data.get('endereco', usuario.endereco)
+            usuario.perfil = data.get('perfil', usuario.perfil)
+            usuario.status = data.get('status', usuario.status)
+            
+            usuario.save() 
+            
+            return JsonResponse({
+                'id': usuario.id,
+                'nome': usuario.nome,
+                'email': usuario.email,
+                'telefone': usuario.telefone,
+                'endereco': usuario.endereco,
+                'perfil': usuario.perfil,
+                'status': usuario.status,
+                'created_at': usuario.created_at.isoformat() if usuario.created_at else None
+            }, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    # OPERAÇÃO DE DELEÇÃO (DELETE)
+    elif request.method == 'DELETE':
+        try:
+            usuario.delete() # Remove diretamente da tabela do Supabase
+            return JsonResponse({'message': 'Usuário deletado com sucesso'}, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@csrf_exempt
+def api_registrar_descarte(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            try:
+                usuario = Usuario.objects.get(id=data.get('usuario_id'))
+            except Usuario.DoesNotExist:
+                return JsonResponse({'error': 'Usuário não localizado no sistema.'}, status=404)
+            
+            nome_residuo = data.get('tipo_residuo')
+            tipo_residuo, _ = TipoResiduo.objects.get_or_create(nome=nome_residuo) 
+
+            # Cria o registro no banco real
+            descarte = Descarte.objects.create(
+                usuario=usuario,
+                tipo_residuo=tipo_residuo,
+                quantidade=data.get('quantidade'),
+                unidade_medida=data.get('unidade'),
+                data_descarte=data.get('data_descarte'),
+                local_descarte=data.get('local'),
+                observacoes=data.get('observacao'),
+                status='registrado'
+            )
+            
+            return JsonResponse({
+                "id": descarte.id,
+                "message": "Descarte integrado com sucesso ao Supabase!"
+            }, status=201)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+            
+    return JsonResponse({'error': 'Método não permitido.'}, status=405)
+
+
+@csrf_exempt
+def api_historico_descartes(request):
+    if request.method == 'GET':
+        usuario_id = request.GET.get('usuario_id')
+        
+        if not usuario_id:
+            return JsonResponse({'error': 'ID do usuário não fornecido'}, status=400)
+
+        descartes = Descarte.objects.filter(usuario_id=usuario_id).order_by('-data_descarte')
+        
+        lista_descartes = []
+        for d in descartes:
+            lista_descartes.append({
+                "id": d.id,
+                "usuario_id": d.usuario_id,
+                "tipo_residuo": d.tipo_residuo.nome if d.tipo_residuo else "Não Informado",
+                "quantidade": float(d.quantidade),
+                "unidade": d.unidade_medida,  
+                "data_descarte": d.data_descarte.isoformat(),
+                "local": d.local_descarte,    
+                "observacao": d.observacoes,  
+                "status": d.status,
+                "created_at": d.created_at.isoformat(),
+                "nome_coletor": "Ponto Verde Central" if d.status != "registrado" else None 
+            })
+            
+        return JsonResponse(lista_descartes, safe=False)

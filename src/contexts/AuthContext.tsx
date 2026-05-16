@@ -1,22 +1,22 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Usuario, mockUsuarios } from '../lib/mockData';
 
-interface AuthContextType {
+export const AuthContext = createContext<{
   user: Usuario | null;
   login: (email: string, senha: string) => Promise<boolean>;
   logout: () => void;
   signup: (userData: Omit<Usuario, 'id' | 'created_at' | 'status'>) => Promise<boolean>;
   isLoading: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+} | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // URL base do seu Django (ajuste se a porta for diferente)
+  const API_URL = 'http://localhost:8000/api';
+
   useEffect(() => {
-    // Verifica a ssessão armazenada
     const storedUser = localStorage.getItem('ecosmart_user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -24,20 +24,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  // LOGIN REAL CONECTADO AO DJANGO
   const login = async (email: string, senha: string): Promise<boolean> => {
-    // Simula Chamada de API
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const response = await fetch(`${API_URL}/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha }),
+      });
 
-    const foundUser = mockUsuarios.find(
-      u => u.email === email && u.senha === senha && u.status === 'ativo'
-    );
-
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem('ecosmart_user', JSON.stringify(foundUser));
-      return true;
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        localStorage.setItem('ecosmart_user', JSON.stringify(userData));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Erro no login:", error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
@@ -45,20 +51,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('ecosmart_user');
   };
 
+  // SIGNUP REAL CONECTADO AO DJANGO -> SUPABASE
   const signup = async (userData: Omit<Usuario, 'id' | 'created_at' | 'status'>): Promise<boolean> => {
-    // Simula chamada de API
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const response = await fetch(`${API_URL}/signup/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
 
-    const newUser: Usuario = {
-      ...userData,
-      id: `user_${Date.now()}`,
-      status: 'ativo',
-      created_at: new Date().toISOString()
-    };
-
-    setUser(newUser);
-    localStorage.setItem('ecosmart_user', JSON.stringify(newUser));
-    return true;
+      if (response.ok) {
+        const newUser = await response.json();
+        setUser(newUser);
+        localStorage.setItem('ecosmart_user', JSON.stringify(newUser));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Erro no cadastro:", error);
+      return false;
+    }
   };
 
   return (

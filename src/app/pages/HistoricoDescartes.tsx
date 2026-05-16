@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { mockDescartes } from '../../lib/mockData';
 import { Table } from '../components/Table';
 import { Drawer } from '../components/Modal';
 import { Search, Download, Filter, Calendar, Package, ArrowLeft, Star, TrendingUp, BarChart3, User } from 'lucide-react';
@@ -11,6 +10,9 @@ import { toast } from 'sonner';
 
 export function HistoricoDescartes() {
   const { user } = useAuth();
+  const [userDescartes, setUserDescartes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDescarte, setSelectedDescarte] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -20,7 +22,24 @@ export function HistoricoDescartes() {
 
   const isPremium = user?.perfil === 'UP';
 
-  const userDescartes = mockDescartes.filter(d => d.usuario_id === user?.id);
+  useEffect(() => {
+    if (!user?.id) return;
+
+    fetch(`http://localhost:8000/api/descartes/historico/?usuario_id=${user.id}`)
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(data => {
+        setUserDescartes(data);
+      })
+      .catch(() => {
+        toast.error('Erro ao carregar seu histórico do Supabase.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [user?.id]);
 
   const filteredDescartes = userDescartes.filter(d => {
     const matchesSearch = d.tipo_residuo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,7 +71,7 @@ export function HistoricoDescartes() {
     setIsExportModalOpen(false);
   };
 
-  // Cálculos de comparativos (Premium)
+  // Cálculos dinâmicos com dados reais
   const totalKgMesAtual = userDescartes
     .filter(d => new Date(d.data_descarte).getMonth() === new Date().getMonth())
     .reduce((acc, d) => acc + d.quantidade, 0);
@@ -70,7 +89,7 @@ export function HistoricoDescartes() {
     ? ((totalKgMesAtual - totalKgMesAnterior) / totalKgMesAnterior * 100).toFixed(0)
     : 0;
 
-const columns = [
+  const columns = [
     {
       key: 'data_descarte',
       header: 'Data',
@@ -102,9 +121,7 @@ const columns = [
           coletado: { label: 'Na Unidade', class: 'bg-purple-100 text-purple-800' },
           processado: { label: 'Finalizado', class: 'bg-green-100 text-green-800' }
         };
-
-        const config = statusConfig[item.status as keyof typeof statusConfig];
-
+        const config = statusConfig[item.status as keyof typeof statusConfig] || { label: item.status, class: 'bg-gray-100 text-gray-800' };
         return (
           <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${config.class}`}>
             {config.label}
@@ -114,9 +131,13 @@ const columns = [
     }
   ];
 
+  if (loading) {
+    return <div className="p-10 text-center text-muted-foreground animate-pulse">Sincronizando seu histórico ecológico...</div>;
+  }
+
   return (
     <div className="space-y-6">
-      {/* Back Button */}
+      {/* Botão Voltar*/}
       <button
         onClick={() => window.history.back()}
         className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -137,7 +158,7 @@ const columns = [
             )}
           </div>
           <p className="mt-2 text-muted-foreground">
-            {isPremium ? 'Visualização detalhada com filtros avançados' : 'Todos os seus registros de descarte'}
+            {isPremium ? 'Visualização detalhada com filtros avançados' : 'Todos os seus registros de descarte armazenados na nuvem'}
           </p>
         </div>
         <Button onClick={() => setIsExportModalOpen(true)} variant="outline">
@@ -146,7 +167,7 @@ const columns = [
         </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Cards de Métricas Reais baseados no Array userDescartes */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-lg border bg-card p-4">
           <div className="flex items-center gap-3">
@@ -202,7 +223,7 @@ const columns = [
         )}
       </div>
 
-      {/* Filters */}
+      {/* Inputs de Filtros */}
       <div className="rounded-xl border bg-card p-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4 sm:flex-row">
@@ -264,7 +285,7 @@ const columns = [
         </div>
       </div>
 
-      {/* Table */}
+      {/* Tabela de Dados Reais */}
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         <Table
           data={filteredDescartes}
@@ -272,7 +293,7 @@ const columns = [
           onRowClick={setSelectedDescarte}
           emptyMessage="Nenhum descarte encontrado"
         />
-      </div>
+      </div>ent 
 
       {/* Drawer */}
       <Drawer

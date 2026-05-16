@@ -17,14 +17,39 @@ export function RegistrarDescarte() {
     observacao: ''
   });
 
-  // Verificar se o usuário está vinculado a uma entidade
   const membroVinculo = mockWorkspaceMembros.find(m => m.usuario_id === user?.id && m.status_vinculo === 'ativo');
   const workspace = membroVinculo ? mockWorkspaces.find(w => w.id === membroVinculo.workspace_id) : null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Descarte registrado com sucesso!');
-    setTimeout(() => navigate('/app/historico'), 1000);
+
+    if (!user?.id) {
+      toast.error("Você precisa estar logado para registrar um descarte.");
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/api/descartes/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          usuario_id: user.id
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Descarte salvo com sucesso!');
+        setTimeout(() => navigate('/app/historico'), 1000);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Erro ao registrar informações.');
+      }
+    } catch (err) {
+      toast.error('Não foi possível conectar ao servidor backend.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
