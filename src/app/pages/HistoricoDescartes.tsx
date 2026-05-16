@@ -293,7 +293,7 @@ export function HistoricoDescartes() {
           onRowClick={setSelectedDescarte}
           emptyMessage="Nenhum descarte encontrado"
         />
-      </div>ent 
+      </div>
 
       {/* Drawer */}
       <Drawer

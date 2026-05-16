@@ -12,4 +12,5 @@ urlpatterns = [
     path('api/usuarios/<int:user_id>/', views.api_usuario_detalhe, name='api_usuario_detalhe'),
     path('api/descartes/', views.api_registrar_descarte, name='api_registrar_descarte'),
     path('api/descartes/historico/', views.api_historico_descartes, name='api_historico_descartes'),
+    path('api/pedidos-coleta/', views.api_pedidos_coleta, name='api_pedidos_coleta'),
 ]

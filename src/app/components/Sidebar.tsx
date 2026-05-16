@@ -103,11 +103,6 @@ export function Sidebar() {
       path: '/app/admin/conteudos',
       icon: FileText
     },
-    {
-      label: 'Arquitetura do Sistema',
-      path: '/app/arquitetura',
-      icon: Network
-    }
   ];
 
   const visibleItems = navItems.filter(item =>

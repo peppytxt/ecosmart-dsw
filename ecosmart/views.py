@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import TipoResiduo, Usuario, ConteudoEducativo, Descarte
+from .models import TipoResiduo, Usuario, ConteudoEducativo, Descarte, PedidoColeta
 import json
 from django.db.models import Count
 from django.contrib.auth.hashers import make_password, check_password
@@ -284,3 +284,61 @@ def api_historico_descartes(request):
             })
             
         return JsonResponse(lista_descartes, safe=False)
+    
+@csrf_exempt
+def api_pedidos_coleta(request):
+    # ---------------------------------------------
+    # LISTAR PEDIDOS (GET)
+    # ---------------------------------------------
+    if request.method == 'GET':
+        usuario_id = request.GET.get('usuario_id')
+        if not usuario_id:
+            return JsonResponse({'error': 'ID do usuário não fornecido'}, status=400)
+            
+        pedidos = PedidoColeta.objects.filter(usuario_id=usuario_id).order_by('-created_at')
+        
+        lista_pedidos = []
+        for p in pedidos:
+            lista_pedidos.append({
+                "id": p.id,
+                "usuario_id": p.usuario_id,
+                # Transforma a string do banco de volta em array para o front-end
+                "materiais": [m.strip() for m in p.materiais.split(',')] if p.materiais else [],
+                "quantidade_estimada": p.quantidade_estimada,
+                "endereco": p.endereco,
+                "status": p.status,
+                "data_solicitacao": p.data_solicitacao.isoformat()
+            })
+        return JsonResponse(lista_pedidos, safe=False)
+
+    # ---------------------------------------------
+    # CRIAR NOVO PEDIDO (POST)
+    # ---------------------------------------------
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            usuario_id = data.get('usuario_id')
+            
+            try:
+                usuario = Usuario.objects.get(id=usuario_id)
+            except Usuario.DoesNotExist:
+                return JsonResponse({'error': 'Usuário inválido.'}, status=404)
+            
+            # Se o front enviar um Array de materiais, junta em formato de texto separado por vírgula
+            materiais_front = data.get('materiais', [])
+            materiais_string = ", ".join(materiais_front) if isinstance(materiais_front, list) else str(materiais_front)
+
+            novo_pedido = PedidoColeta.objects.create(
+                usuario=usuario,
+                materiais=materiais_string,
+                quantidade_estimada=data.get('quantidade_estimada'),
+                endereco=data.get('endereco'),
+                status='solicitada'
+            )
+
+            return JsonResponse({'message': 'Pedido de coleta solicitado com sucesso!', 'id': novo_pedido.id}, status=201)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Método não permitido.'}, status=405)

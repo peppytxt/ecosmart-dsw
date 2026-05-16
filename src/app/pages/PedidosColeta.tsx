@@ -1,16 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { mockPedidosColeta } from '../../lib/mockData';
 import { Table } from '../components/Table';
-import { Plus, Package, ArrowLeft } from 'lucide-react';
+import { Plus, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 
 export function PedidosColeta() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [userPedidos, setUserPedidos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('all');
 
-  const userPedidos = mockPedidosColeta.filter(p => p.usuario_id === user?.id);
+  // Carrega os pedidos do banco de dados real
+  useEffect(() => {
+    if (!user?.id) return;
+
+    fetch(`http://localhost:8000/api/pedidos-coleta/?usuario_id=${user.id}`)
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(data => setUserPedidos(data))
+      .catch(() => toast.error('Erro ao buscar pedidos de coleta.'))
+      .finally(() => setLoading(false));
+  }, [user?.id]);
 
   const filteredPedidos = userPedidos.filter(p =>
     selectedStatus === 'all' || p.status === selectedStatus
@@ -32,7 +46,7 @@ export function PedidosColeta() {
     {
       key: 'materiais',
       header: 'Materiais',
-      render: (item: any) => item.materiais.join(', ')
+      render: (item: any) => Array.isArray(item.materiais) ? item.materiais.join(', ') : item.materiais
     },
     { key: 'quantidade_estimada', header: 'Quantidade' },
     { key: 'endereco', header: 'Endereço' },
@@ -46,14 +60,17 @@ export function PedidosColeta() {
           finalizada: 'bg-green-100 text-green-800',
           cancelada: 'bg-red-100 text-red-800'
         };
+        const statusKey = item.status as keyof typeof colors;
         return (
-          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${colors[item.status as keyof typeof colors]}`}>
-            {item.status}
+          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${colors[statusKey] || 'bg-gray-100'}`}>
+            {item.status.toUpperCase()}
           </span>
         );
       }
     }
   ];
+
+  if (loading) return <div className="p-10 text-center text-muted-foreground animate-pulse">Buscando agendamentos no banco...</div>;
 
   return (
     <div className="space-y-6">
